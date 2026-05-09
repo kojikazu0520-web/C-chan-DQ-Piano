@@ -266,13 +266,14 @@ def playlist_cards(items: list[dict], lang: str, hero: bool = False) -> str:
         thumb_html = f'<img class="playlist-thumb" src="{thumb}" alt="{esc(playlist["title"])}" loading="lazy">' if thumb else ''
         count = playlist.get('itemCountText') or ''
         desc = playlist.get('description') or ''
+        link_label = 'プレイリストを開く' if lang == 'ja' else 'Open playlist'
         body.append(
             '<article class="video-card video-card-grid seo-card">'
             f'{thumb_html}'
             f'<p class="video-meta">{esc(count)}</p>'
             f'<h3>{esc(playlist["title"])}</h3>'
             f'{f"<p>{esc(desc)}</p>" if desc else ""}'
-            f'<a class="video-link" href="{playlist["url"]}" target="_blank" rel="noreferrer">{"\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u3092\u958b\u304f" if lang == "ja" else "Open playlist"}</a>'
+            f'<a class="video-link" href="{playlist["url"]}" target="_blank" rel="noreferrer">{link_label}</a>'
             '</article>'
         )
     return f'<div class="{wrap}">' + ''.join(body) + '</div>'
