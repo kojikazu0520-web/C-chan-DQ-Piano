@@ -266,16 +266,34 @@ def playlist_cards(items: list[dict], lang: str, hero: bool = False) -> str:
         thumb_html = f'<img class="playlist-thumb" src="{thumb}" alt="{esc(playlist["title"])}" loading="lazy">' if thumb else ''
         count = playlist.get('itemCountText') or ''
         desc = playlist.get('description') or ''
+        link_label = 'プレイリストを開く' if lang == 'ja' else 'Open playlist'
         body.append(
             '<article class="video-card video-card-grid seo-card">'
             f'{thumb_html}'
             f'<p class="video-meta">{esc(count)}</p>'
             f'<h3>{esc(playlist["title"])}</h3>'
             f'{f"<p>{esc(desc)}</p>" if desc else ""}'
-            f'<a class="video-link" href="{playlist["url"]}" target="_blank" rel="noreferrer">{"\u30d7\u30ec\u30a4\u30ea\u30b9\u30c8\u3092\u958b\u304f" if lang == "ja" else "Open playlist"}</a>'
+            f'<a class="video-link" href="{playlist["url"]}" target="_blank" rel="noreferrer">{link_label}</a>'
             '</article>'
         )
     return f'<div class="{wrap}">' + ''.join(body) + '</div>'
+
+
+def medley_video_cards(items: list[dict], lang: str) -> str:
+    body = []
+    for item in items:
+        thumb = normalize_thumb(item.get('thumbnail'))
+        thumb_html = f'<img class="playlist-thumb" src="{thumb}" alt="{esc(item["title"])}" loading="lazy">' if thumb else ''
+        link_label = '動画を開く' if lang == 'ja' else 'Open video'
+        body.append(
+            '<article class="video-card video-card-grid seo-card">'
+            f'{thumb_html}'
+            f'<p class="video-meta">{esc(item["playlistTitle"])}</p>'
+            f'<h3>{esc(item["title"])}</h3>'
+            f'<a class="video-link" href="{item["url"]}" target="_blank" rel="noreferrer">{link_label}</a>'
+            '</article>'
+        )
+    return '<div class="seo-card-grid">' + ''.join(body) + '</div>'
 
 
 def hero_playlist_thumb(playlist: dict, lang: str) -> str:
@@ -482,6 +500,20 @@ def build() -> None:
             series_playlists[key] = playlist
         if is_medley(playlist['title']):
             medley_playlists.append(playlist)
+    medley_tracks = []
+    seen_medley_urls = set()
+    for playlist in medley_playlists:
+        for track in playlist.get('tracks', []):
+            url = track.get('url')
+            if not url or url in seen_medley_urls:
+                continue
+            seen_medley_urls.add(url)
+            medley_tracks.append({
+                'title': track.get('title') or track.get('rawTitle') or playlist['title'],
+                'url': url,
+                'playlistTitle': playlist['title'],
+                'thumbnail': playlist.get('thumbnail', ''),
+            })
 
     urls = [BASE + '/', BASE + '/en.html']
 
@@ -550,8 +582,8 @@ def build() -> None:
             crumbs = [('ホーム', '/') if lang == 'ja' else ('Home', '/en.html'), (label, page)]
             if slug == 'medley':
                 item_list = [
-                    {'@type': 'ListItem', 'position': i + 1, 'name': playlist['title'], 'url': playlist['url']}
-                    for i, playlist in enumerate(medley_playlists)
+                    {'@type': 'ListItem', 'position': i + 1, 'name': track['title'], 'url': track['url']}
+                    for i, track in enumerate(medley_tracks)
                 ]
             else:
                 item_list = [
@@ -564,9 +596,9 @@ def build() -> None:
                 {'@type': 'ItemList', 'itemListElement': item_list},
             ]
             metrics = ''.join([
-                metric('対象曲数' if lang == 'ja' else 'Songs', str(len(rows) if slug != 'medley' else len(medley_playlists))),
+                metric('対象曲数' if lang == 'ja' else 'Songs', str(len(rows) if slug != 'medley' else len(medley_tracks))),
                 metric('関連シリーズ' if lang == 'ja' else 'Series', str(len(series_keys) if slug != 'medley' else len(SERIES_MAP))),
-                metric('動画リンク' if lang == 'ja' else 'Linked videos', str(linked_count if slug != 'medley' else len(medley_playlists))),
+                metric('動画リンク' if lang == 'ja' else 'Linked videos', str(linked_count if slug != 'medley' else len(medley_tracks))),
             ])
             actions = [
                 action('/category-index.html' if lang == 'ja' else '/en/category-index.html', 'カテゴリ一覧へ' if lang == 'ja' else 'Category index', primary=True),
@@ -575,9 +607,17 @@ def build() -> None:
             ]
             feature = playlist_cards(featured, lang, hero=True) if featured else ''
             if slug == 'medley':
-                table_or_cards = playlist_cards(medley_playlists, lang)
-                section_title = '作品別メドレー・場面別メドレー' if lang == 'ja' else 'Title Medley and Scene Medley'
-                section_copy = 'ポッドキャスト用に用意したローカル保存サムネイルを使って、メドレー導線を強めています。' if lang == 'ja' else 'Featured with locally saved podcast cover images.'
+                table_or_cards = (
+                    medley_video_cards(medley_tracks, lang)
+                    + section(
+                        'Playlists',
+                        'メドレープレイリスト' if lang == 'ja' else 'Medley Playlists',
+                        playlist_cards(medley_playlists, lang),
+                        'YouTube上のプレイリストへ進めます。' if lang == 'ja' else 'Open the full YouTube playlists.',
+                    )
+                )
+                section_title = 'メドレー動画' if lang == 'ja' else 'Medley Videos'
+                section_copy = '作業用BGMや場面別に聴けるメドレー動画をまとめています。' if lang == 'ja' else 'Medley videos for background listening and themed browsing.'
             else:
                 table_or_cards = song_table(rows, lang)
                 section_title = label

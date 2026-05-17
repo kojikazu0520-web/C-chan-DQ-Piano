@@ -1459,8 +1459,8 @@ window.songReferenceData = {
       "sortNumber": 8,
       "songTitle": "ひんやりと暗い道",
       "category": "ダンジョン",
-      "videoUrl": "",
-      "difficultyLabel": "",
+      "videoUrl": "https://www.youtube.com/watch?v=bnmmqHWh83k",
+      "difficultyLabel": "未設定",
       "difficultyStars": null
     },
     {
@@ -1468,8 +1468,8 @@ window.songReferenceData = {
       "sortNumber": 9,
       "songTitle": "暗い道の奥で",
       "category": "ダンジョン",
-      "videoUrl": "",
-      "difficultyLabel": "",
+      "videoUrl": "https://www.youtube.com/watch?v=bnmmqHWh83k",
+      "difficultyLabel": "未設定",
       "difficultyStars": null
     },
     {
